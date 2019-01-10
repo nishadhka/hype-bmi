@@ -149,6 +149,7 @@ CONTAINS
         INTEGER                                             :: istat
 
         istat = 0
+        iens = 1
         
         CALL DATE_AND_TIME(logdate, logtime, values=datim)
         
@@ -253,7 +254,8 @@ CONTAINS
       IF(istat.NE.0) RETURN
 
       CALL prepare_for_update(modeldir, wobsvarname, quseobsallstations, quseobsnostations,             &
-                              qarnostations,warnostations,wendupdallstations,wendupdnostations, nsub)
+                              qarnostations, warnostations, wendupdallstations, wendupdnostations,      & 
+                              nsub)
 
 ! Initialisations for memory allocation (states and output)
       CALL allocate_model_states(nsub_basemodel,statesize,conduct, frozenstate, soilstate,              &
@@ -342,9 +344,11 @@ CONTAINS
         USE READWRITE_ROUTINES, ONLY:       log_progress
         USE STATE_DATAMODULE, ONLY :        finalize_outstate
 
-        INTEGER :: istat
+        INTEGER :: istat, istart
         
         istat = 0
+        istart = idt
+        idt = max(1, idt)
 
         CALL get_current_forcing(idt, nsub, d)
         CALL calculate_time_for_model(idt, d)
@@ -383,6 +387,10 @@ CONTAINS
             IF(pwrite) CALL save_loadfiles(resdir, currentdate%year)
         ENDIF
 
+        IF(istart>0) THEN
+            idt = idt + 1
+        ENDIF
+
     END FUNCTION update
 
     FUNCTION finalize() RESULT(istat)
@@ -407,27 +415,27 @@ CONTAINS
         
         INTEGER :: istat
 
-        istat= 0
+        istat=0
         IF(nacrit/=0) THEN
-            CALL calculate_criteria(optcrit,basincrit,simperformance,condcrit,condthres)
-            CALL write_simulation_assessment(resdir,iens,nacrit,optcrit, simperformance,                &
-                                             optim%task_runens,condcrit,condthres)
-            CALL write_subbasin_assessment(resdir,nsubCrit,nacrit,basincrit,iens,                       &
+            CALL calculate_criteria(optcrit, basincrit, simperformance, condcrit, condthres)
+            CALL write_simulation_assessment(resdir, iens, nacrit, optcrit, simperformance,                  &
+                                             optim%task_runens, condcrit, condthres)
+            CALL write_subbasin_assessment(resdir, nsubCrit, nacrit, basincrit, iens,                        &
                                            optim%task_runens)
         ENDIF
 
 ! Save and close files or prepare them for next ensemble member simulation
-        CALL close_outputfiles(nsub,naquifers,1)
+        CALL close_outputfiles(nsub,naquifers, 1)
         CALL close_observations(forcingdir)
 
 ! Write results to files
-        CALL save_mapfiles(resdir,nsub,nmapperiod,iens,optim%task_runens,                               &
+        CALL save_mapfiles(resdir, nsub, nmapperiod, iens, optim%task_runens,                                &
                            optim%task_writesim)
 ! Deallocate variables
         CALL deallocate_worldvar()
         CALL deallocate_modvar(nsub)
-        CALL deallocate_model_states(frozenstate,soilstate,aquiferstate,                                &
-                                     riverstate,lakestate,miscstate)
+        CALL deallocate_model_states(frozenstate, soilstate, aquiferstate,                                   &
+                                     riverstate, lakestate, miscstate)
         IF(ALLOCATED(basincrit)) DEALLOCATE(basincrit)
         IF(ALLOCATED(simperformance)) DEALLOCATE(simperformance)
         IF(ALLOCATED(par)) DEALLOCATE(par)
@@ -436,8 +444,8 @@ CONTAINS
         CALL DATE_AND_TIME (values=datim)
         WRITE(logstream,*)
         WRITE(logstream,*) '---------------------------------------------------'
-        WRITE(logstream,'(A,I4,A,I2.2,A,I2.2,A,I2.2,A,I2.2,A,I2.2)')                                    &
-                ' Job finished date: ',datim(1),'-',datim(2),'-',datim(3),                              &
+        WRITE(logstream,'(A,I4,A,I2.2,A,I2.2,A,I2.2,A,I2.2,A,I2.2)')                                         &
+                ' Job finished date: ',datim(1),'-',datim(2),'-',datim(3),                                   &
                 '  time: ',datim(5),':',datim(6),':',datim(7)
         CLOSE(logstream)
 
