@@ -63,6 +63,51 @@ MODULE HYPELIB
 
 CONTAINS
 
+    FUNCTION get_num_subbasins() RESULT(ret)
+
+        USE MODVAR, ONLY : nsub
+
+        IMPLICIT NONE
+
+        INTEGER :: ret
+
+        ret = nsub
+
+    END FUNCTION get_num_subbasins
+
+    SUBROUTINE get_latlons(targetlatarr, targetlonarr)
+
+        USE MODVAR, ONLY : nsub, basin
+
+        IMPLICIT NONE
+
+        REAL, INTENT(OUT) :: targetlatarr(nsub)
+        REAL, INTENT(OUT) :: targetlonarr(nsub)
+        INTEGER           :: i
+
+        DO i = 1, nsub
+            targetlatarr(i) = basin(i)%latitude
+            targetlonarr(i) = basin(i)%longitude
+        END DO
+
+    END SUBROUTINE get_latlons
+
+    SUBROUTINE get_discharge(targetarr)
+
+        USE MODVAR, ONLY : nsub, outvar, outvarindex
+        USE HYPEVARIABLES, ONLY : o_cout
+
+        IMPLICIT NONE
+
+        REAL, INTENT(OUT) :: targetarr(nsub)
+        INTEGER           :: i
+
+        DO i  = 1, nsub
+            targetarr(i) = outvar(i,outvarindex(o_cout))
+        END DO
+
+    END SUBROUTINE get_discharge
+
     FUNCTION initialize(dir, iseq) RESULT(istat)
     
         USE MODELMODULE, ONLY :         model_version_information,              &
