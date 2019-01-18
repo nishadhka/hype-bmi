@@ -8,6 +8,8 @@ MODULE HYPELIB
                                     miscstatetype
     USE WORLDVAR, ONLY :            maxcharpath
     USE LIBDATE, ONLY :             DateType, OPERATOR(.EQ.)
+    USE HYPEVARIABLES, ONLY :       o_cout, o_ctmp, o_snow, o_snowcover, o_snowdens, o_snowdepth, o_snowfall,           &
+                                    o_snowmelt, o_soim
 
     IMPLICIT NONE
     
@@ -61,7 +63,11 @@ MODULE HYPELIB
     TYPE(LAKESTATETYPE)    ::       lakestate
     TYPE(MISCSTATETYPE)    ::       miscstate
 
+    INTEGER, PARAMETER :: o_fields(8) = (/ o_cout, o_ctmp, o_snow, o_snowdens, o_snowcover, o_snowdepth, o_snowfall,&
+                                        o_soim /)
+
 CONTAINS
+
 
     FUNCTION get_num_subbasins() RESULT(ret)
 
@@ -74,6 +80,59 @@ CONTAINS
         ret = nsub
 
     END FUNCTION get_num_subbasins
+
+
+    SUBROUTINE get_num_output_fields(dest)
+
+        IMPLICIT NONE
+
+        INTEGER, INTENT(OUT) :: dest
+
+        dest = SIZE(o_fields)
+
+    END SUBROUTINE get_num_output_fields
+
+
+    FUNCTION get_field_id(name) RESULT(ret)
+
+        IMPLICIT NONE
+
+        CHARACTER(LEN=*), INTENT(IN) :: name
+        CHARACTER(128), ALLOCATABLE, SAVE  :: names(:)
+        INTEGER                      :: i, n, ret
+
+        CALL get_num_output_fields(n)
+        IF(.NOT.ALLOCATED(names)) THEN
+            ALLOCATE(names(n))
+            CALL get_output_fields(names)
+        END IF
+        ret = -1
+        DO i=1, n
+            IF(name == names(i)) THEN
+                ret = o_fields(i)
+            END IF
+        END DO
+
+    END FUNCTION get_field_id
+
+
+    SUBROUTINE get_output_fields(dest)
+
+        IMPLICIT NONE
+
+        CHARACTER(LEN=*), INTENT(OUT) :: dest(:)
+
+        dest(1) = "discharge"
+        dest(2) = "air_temperature"
+        dest(3) = "snow_amount"
+        dest(4) = "snow_density"
+        dest(5) = "snow_cover"
+        dest(6) = "snow_depth"
+        dest(7) = "snow_fall"
+        dest(8) = "soil_moisture"
+
+    END SUBROUTINE get_output_fields
+
 
     SUBROUTINE get_latlons(targetlatarr, targetlonarr)
 
@@ -92,21 +151,24 @@ CONTAINS
 
     END SUBROUTINE get_latlons
 
-    SUBROUTINE get_discharge(targetarr)
+
+    SUBROUTINE get_basin_field(targetarr, var)
 
         USE MODVAR, ONLY : nsub, outvar, outvarindex
-        USE HYPEVARIABLES, ONLY : o_cout
 
         IMPLICIT NONE
 
-        REAL, INTENT(OUT) :: targetarr(nsub)
-        INTEGER           :: i
+        REAL, INTENT(OUT)   :: targetarr(nsub)
+        CHARACTER(LEN=*), INTENT(IN) :: var
+        INTEGER             :: i, varid
 
+        varid = get_field_id(var)
         DO i  = 1, nsub
-            targetarr(i) = outvar(i,outvarindex(o_cout))
+            targetarr(i) = outvar(i,outvarindex(varid))
         END DO
 
-    END SUBROUTINE get_discharge
+    END SUBROUTINE get_basin_field
+
 
     FUNCTION initialize(dir, iseq) RESULT(istat)
     
