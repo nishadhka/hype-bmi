@@ -25,14 +25,24 @@ endif
 
 objects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o main.o
 libobjects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o hypelib.o mainlib.o
+libcobjects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o hypelib.o hypebmi.o
 modfiles = libdate.mod hypevariables.mod modvar.mod worldvar.mod general_water_concentration.mod general_functions.mod convert.mod timeroutines.mod compout.mod statetype_module.mod tracer_processes.mod readwrite_routines.mod hype_indata.mod model_test_routines.mod atmospheric_processes.mod hype_waterbalance.mod npc_soil_processes.mod soil_processes.mod irrigation_module.mod regional_groundwater_module.mod surfacewater_processes.mod npc_surfacewater_processes.mod soilmodel_default.mod glacier_soilmodel.mod floodplain_soilmodel.mod modelmodule.mod datamodule.mod state_datamodule.mod optimization.mod hypelib.mod
 
 # Makefile
-all: hype hypelib
-hype:	$(objects)
+all:        hype hypelib hypec
+
+hype:	    $(objects)
 	$(f90comp) -o hype $(switch) $(objects)
-hypelib:$(libobjects)
+
+hypelib:    $(libobjects)
 	$(f90comp) -o hypelib $(switch) $(libobjects)
+
+hypec:      hypebmi.o
+	g++ -o hypec $(libcobjects) -lgfortran
+
+hypebmi.o:  hypebmi.c
+	g++ -c hypebmi.c
+
 # All .o files are made from corresponding .f90 files
 %.o:	%.f90
 	$(f90comp) -c $(switch) $<

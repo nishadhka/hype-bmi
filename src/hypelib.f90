@@ -69,13 +69,15 @@ MODULE HYPELIB
 CONTAINS
 
 
-    FUNCTION get_num_subbasins() RESULT(ret)
+    FUNCTION get_num_subbasins() RESULT(ret) bind(c, name="get_num_basins")
+
+        USE, INTRINSIC :: ISO_C_BINDING
 
         USE MODVAR, ONLY : nsub
 
         IMPLICIT NONE
 
-        INTEGER :: ret
+        INTEGER(KIND=C_INT) :: ret
 
         ret = nsub
 
@@ -170,8 +172,10 @@ CONTAINS
     END SUBROUTINE get_basin_field
 
 
-    FUNCTION initialize(dir, iseq) RESULT(istat)
-    
+    FUNCTION initialize(dir, iseq) RESULT(istat) bind(c, name="initialize")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+
         USE MODELMODULE, ONLY :         model_version_information,              &
                                         define_output_variables,                &
                                         set_modelconfig_from_parameters,        &
@@ -251,22 +255,24 @@ CONTAINS
                                         run_hype_tests,                         &
                                         run_hype_observation_tests
 
-        CHARACTER(LEN=maxcharpath), INTENT(IN), OPTIONAL    :: dir
-        INTEGER, INTENT(IN), OPTIONAL                       :: iseq
-        INTEGER                                             :: istat
+!        CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN), OPTIONAL        :: dir(:)
+        CHARACTER(KIND=C_CHAR), INTENT(IN), OPTIONAL        :: dir(*)
+        INTEGER(KIND=C_INT), INTENT(IN), OPTIONAL           :: iseq
+        INTEGER(KIND=C_INT)                                 :: istat
 
         istat = 0
         iens = 1
         
         CALL DATE_AND_TIME(logdate, logtime, values=datim)
-        
+
         CALL model_version_information(0)
 
         IF(PRESENT(dir)) THEN
-            infodir=dir
+            infodir=TRANSFER(dir(1:maxcharpath), infodir)
         ELSE
             CALL getcwd(infodir, istat)
         ENDIF
+
         IF(PRESENT(iseq)) THEN
             simsequence=iseq
         ENDIF
