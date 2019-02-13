@@ -84,15 +84,24 @@ CONTAINS
     END FUNCTION get_num_subbasins
 
 
-    SUBROUTINE get_num_output_fields(dest)
+!    FUNCTION get_hype_time() RESULT(tim) bind(c, name="get_hype_time")
+
+
+
+!    END FUNCTION get_hype_time
+
+
+    FUNCTION get_num_output_fields() RESULT(ret) bind(c, name="get_num_ovars")
+
+        USE, INTRINSIC :: ISO_C_BINDING
 
         IMPLICIT NONE
 
-        INTEGER, INTENT(OUT) :: dest
+        INTEGER(KIND=C_INT) :: ret
 
-        dest = SIZE(o_fields)
+        ret = SIZE(o_fields)
 
-    END SUBROUTINE get_num_output_fields
+    END FUNCTION get_num_output_fields
 
 
     FUNCTION get_field_id(name) RESULT(ret)
@@ -103,7 +112,7 @@ CONTAINS
         CHARACTER(128), ALLOCATABLE, SAVE  :: names(:)
         INTEGER                      :: i, n, ret
 
-        CALL get_num_output_fields(n)
+        n = get_num_output_fields()
         IF(.NOT.ALLOCATED(names)) THEN
             ALLOCATE(names(n))
             CALL get_output_fields(names)
@@ -134,6 +143,32 @@ CONTAINS
         dest(8) = "soil_moisture"
 
     END SUBROUTINE get_output_fields
+
+
+    SUBROUTINE get_output_field(dest, stride) bind(c, name="get_ovar")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+
+        IMPLICIT NONE
+
+        INTEGER(KIND=C_INT), INTENT(IN)                   :: stride
+        CHARACTER(KIND=C_CHAR), DIMENSION(*), INTENT(OUT) :: dest
+        CHARACTER(maxcharpath), ALLOCATABLE               :: fldids(:)
+        INTEGER :: i, j, k, nflds
+
+        nflds = get_num_output_fields()
+        ALLOCATE(fldids(nflds))
+        CALL get_output_fields(fldids)
+        DO i=1,nflds
+            k = len(TRIM(fldids(i)))
+            DO j=1,k
+                dest((i - 1)*stride + j) = fldids(i)(j:j)
+            END DO
+            dest((i - 1)*stride + k + 1) = C_NULL_CHAR
+        END DO
+        DEALLOCATE(fldids)
+
+    END SUBROUTINE get_output_field
 
 
     SUBROUTINE get_latlons(targetlatarr, targetlonarr)
@@ -172,7 +207,7 @@ CONTAINS
     END SUBROUTINE get_basin_field
 
 
-    FUNCTION initialize(dir, iseq) RESULT(istat) bind(c, name="initialize")
+    FUNCTION initialize(dir, iseq) RESULT(istat) bind(c, name="init_hype")
 
         USE, INTRINSIC :: ISO_C_BINDING
 
@@ -255,10 +290,11 @@ CONTAINS
                                         run_hype_tests,                         &
                                         run_hype_observation_tests
 
-!        CHARACTER(LEN=1,KIND=C_CHAR), INTENT(IN), OPTIONAL        :: dir(:)
-        CHARACTER(KIND=C_CHAR), INTENT(IN), OPTIONAL        :: dir(*)
+        CHARACTER(KIND=C_CHAR), DIMENSION(*), INTENT(IN), OPTIONAL  :: dir
         INTEGER(KIND=C_INT), INTENT(IN), OPTIONAL           :: iseq
         INTEGER(KIND=C_INT)                                 :: istat
+        INTEGER                                             :: ii
+        LOGICAL                                             :: LENDL
 
         istat = 0
         iens = 1
@@ -268,7 +304,17 @@ CONTAINS
         CALL model_version_information(0)
 
         IF(PRESENT(dir)) THEN
-            infodir=TRANSFER(dir(1:maxcharpath), infodir)
+            LENDL = .FALSE.
+            DO ii=1,maxcharpath
+                IF(dir(ii) == C_NULL_CHAR) THEN
+                    LENDL=.TRUE.
+                END IF
+                IF(LENDL) THEN
+                    infodir(ii:ii) = ' '
+                ELSE
+                    infodir(ii:ii) = dir(ii)
+                END IF
+            END DO
         ELSE
             CALL getcwd(infodir, istat)
         ENDIF
@@ -427,7 +473,10 @@ CONTAINS
 
     END FUNCTION initialize
 
-    FUNCTION update() RESULT(istat)
+
+    FUNCTION update() RESULT(istat) bind(c, name="update_hype")
+
+        USE, INTRINSIC :: ISO_C_BINDING
         
         USE MODELMODULE, ONLY :             model
         USE DATAMODULE, ONLY :              get_current_forcing,                    &
@@ -457,7 +506,8 @@ CONTAINS
         USE READWRITE_ROUTINES, ONLY:       log_progress
         USE STATE_DATAMODULE, ONLY :        finalize_outstate
 
-        INTEGER :: istat, istart
+        INTEGER(KIND=C_INT) :: istat
+        INTEGER             :: istart
         
         istat = 0
         istart = idt
@@ -506,7 +556,9 @@ CONTAINS
 
     END FUNCTION update
 
-    FUNCTION finalize() RESULT(istat)
+    FUNCTION finalize() RESULT(istat) bind(c, name="finalize_hype")
+
+        USE, INTRINSIC :: ISO_C_BINDING
         
         USE COMPOUT, ONLY  :                calculate_criteria
         USE DATAMODULE, ONLY :              write_simulation_assessment,                & 
@@ -526,7 +578,7 @@ CONTAINS
                                             naquifers
         USE STATE_DATAMODULE, ONLY :        finalize_outstate
         
-        INTEGER :: istat
+        INTEGER(KIND=C_INT) :: istat
 
         istat=0
         IF(nacrit/=0) THEN

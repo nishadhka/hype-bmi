@@ -21,7 +21,7 @@ PROGRAM MAINLIB
     CALL get_latlons(lats, lons)
     WRITE(0,*) "The latitudes are",  lats
     WRITE(0,*) "The longitudes are", lons
-    CALL get_num_output_fields(nflds)
+    nflds = get_num_output_fields()
     ALLOCATE(fldids(nflds))
     CALL get_output_fields(fldids)
     DO idt = 1, ndt
