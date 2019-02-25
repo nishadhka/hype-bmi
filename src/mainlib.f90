@@ -1,7 +1,7 @@
 PROGRAM MAINLIB
 
     USE HYPELIB, ONLY:      initialize, update, finalize, get_num_subbasins, get_num_output_fields,&
-                            get_latlons, get_output_fields, get_basin_field
+                            get_latlons, get_basin_field
     USE WORLDVAR, ONLY:     maxcharpath, ndt
     USE DATAMODULE, ONLY:   get_hyss_arguments
 
@@ -23,13 +23,13 @@ PROGRAM MAINLIB
     WRITE(0,*) "The longitudes are", lons
     nflds = get_num_output_fields()
     ALLOCATE(fldids(nflds))
-    CALL get_output_fields(fldids)
+!    CALL get_output_fields(fldids)
     DO idt = 1, ndt
         istat = update()
         IF(istat/=0) STOP istat
         WRITE(0,*) "------------- TS ", idt, "-------------"
         DO ifld = 1, nflds
-            CALL get_basin_field(Q, fldids(ifld))
+            CALL get_basin_field(1, Q)
             WRITE(0,*) fldids(ifld), "max = ", MAXVAL(Q), ", min = ", MINVAL(Q)
         END DO
     ENDDO

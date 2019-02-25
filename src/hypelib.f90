@@ -9,7 +9,7 @@ MODULE HYPELIB
     USE WORLDVAR, ONLY :            maxcharpath
     USE LIBDATE, ONLY :             DateType, OPERATOR(.EQ.)
     USE HYPEVARIABLES, ONLY :       o_cout, o_ctmp, o_snow, o_snowcover, o_snowdens, o_snowdepth, o_snowfall,           &
-                                    o_snowmelt, o_soim
+                                    o_snowmelt, o_soim, o_soiltmp
 
     IMPLICIT NONE
     
@@ -63,10 +63,132 @@ MODULE HYPELIB
     TYPE(LAKESTATETYPE)    ::       lakestate
     TYPE(MISCSTATETYPE)    ::       miscstate
 
-    INTEGER, PARAMETER :: o_fields(8) = (/ o_cout, o_ctmp, o_snow, o_snowdens, o_snowcover, o_snowdepth, o_snowfall,&
-                                        o_soim /)
+    INTEGER, PARAMETER :: o_fields(9) = (/ o_cout, o_ctmp, o_snow, o_snowdens, o_snowcover, o_snowdepth, o_snowfall,&
+                                        o_soim, o_soiltmp /)
 
 CONTAINS
+
+    FUNCTION get_hype_time() RESULT(ret) bind(c, name="get_hype_time")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE WORLDVAR,       ONLY : sdate
+
+        IMPLICIT NONE
+
+        REAL(KIND=C_FLOAT)      :: ret
+
+        ret = convert_hype_time(sdate)
+
+    END FUNCTION get_hype_time
+
+    FUNCTION get_end_time() RESULT(ret) bind(c, name="get_hype_end_time")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE MODVAR,       ONLY : currentdate
+
+        IMPLICIT NONE
+
+        REAL(KIND=C_FLOAT)      :: ret
+
+        ret = convert_hype_time(currentdate)
+
+    END FUNCTION get_end_time
+
+    FUNCTION get_time_step() RESULT(ret) bind(c, name="get_hype_time_step")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE WORLDVAR, ONLY : steplen
+
+        IMPLICIT NONE
+
+        REAL(KIND=C_FLOAT)      :: ret
+
+        ret = steplen%day*24. + steplen%hour + steplen%minute/60.
+
+    END FUNCTION get_time_step
+
+    FUNCTION convert_hype_time(idate) RESULT(ret)
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE LIBDATE,      ONLY : datetype, juliandatetype, date2julian, julian2dhm
+        USE TIMEROUTINES, ONLY : period_length
+        USE WORLDVAR,     ONLY : bdate
+
+        IMPLICIT NONE
+
+        REAL                        :: ret
+        TYPE(datetype), INTENT(IN)  :: idate
+        TYPE(datetype)              :: period
+        TYPE(juliandatetype)        :: julstart, julend, tmp
+
+        julstart = date2julian(bdate)
+        julend = date2julian(idate)
+
+        tmp%head = julend%head - julstart%head
+        tmp%tail = julend%tail - julstart%tail
+
+        IF(tmp%tail < 0) THEN
+            tmp%tail = tmp%tail + 1.
+            tmp%head = tmp%head - 1.
+        ENDIF
+
+        period = julian2dhm(tmp)
+
+        ret = period%day*24. + period%hour + period%minute/60.
+
+    END FUNCTION convert_hype_time
+
+    FUNCTION get_num_output_fields() RESULT(ret) bind(c, name="get_num_ovars")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+
+        IMPLICIT NONE
+
+        INTEGER(KIND=C_INT) :: ret
+
+        ret = SIZE(o_fields)
+
+    END FUNCTION get_num_output_fields
+
+
+    SUBROUTINE get_output_name(index, dest) bind(c, name="get_ovar_name")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE MODVAR, ONLY : outvarid
+
+        IMPLICIT NONE
+
+        INTEGER(KIND=C_INT), INTENT(IN)                   :: index
+        CHARACTER(KIND=C_CHAR), INTENT(OUT)               :: dest(*)
+        INTEGER                                           :: j,k
+
+        k = LEN(TRIM(outvarid(o_fields(index))%longname))
+        DO j=1,k
+            dest(j) = outvarid(o_fields(index))%longname(j:j)
+        END DO
+        dest(k+1) = C_NULL_CHAR
+
+    END SUBROUTINE get_output_name
+
+
+    SUBROUTINE get_output_units(index, dest) bind(c, name="get_ovar_units")
+
+        USE, INTRINSIC :: ISO_C_BINDING
+        USE MODVAR, ONLY : outvarid
+
+        IMPLICIT NONE
+
+        INTEGER(KIND=C_INT), INTENT(IN)                   :: index
+        CHARACTER(KIND=C_CHAR), INTENT(OUT)               :: dest(*)
+        INTEGER                                           :: j,k
+
+        k = LEN(TRIM(outvarid(o_fields(index))%longunit))
+        DO j=1,k
+            dest(j) = outvarid(o_fields(index))%longunit(j:j)
+        END DO
+        dest(k+1) = C_NULL_CHAR
+
+    END SUBROUTINE get_output_units
 
 
     FUNCTION get_num_subbasins() RESULT(ret) bind(c, name="get_num_basins")
@@ -84,101 +206,15 @@ CONTAINS
     END FUNCTION get_num_subbasins
 
 
-!    FUNCTION get_hype_time() RESULT(tim) bind(c, name="get_hype_time")
-
-
-
-!    END FUNCTION get_hype_time
-
-
-    FUNCTION get_num_output_fields() RESULT(ret) bind(c, name="get_num_ovars")
+    SUBROUTINE get_latlons(targetlatarr, targetlonarr) bind(c, name="get_latlons")
 
         USE, INTRINSIC :: ISO_C_BINDING
-
-        IMPLICIT NONE
-
-        INTEGER(KIND=C_INT) :: ret
-
-        ret = SIZE(o_fields)
-
-    END FUNCTION get_num_output_fields
-
-
-    FUNCTION get_field_id(name) RESULT(ret)
-
-        IMPLICIT NONE
-
-        CHARACTER(LEN=*), INTENT(IN) :: name
-        CHARACTER(128), ALLOCATABLE, SAVE  :: names(:)
-        INTEGER                      :: i, n, ret
-
-        n = get_num_output_fields()
-        IF(.NOT.ALLOCATED(names)) THEN
-            ALLOCATE(names(n))
-            CALL get_output_fields(names)
-        END IF
-        ret = -1
-        DO i=1, n
-            IF(name == names(i)) THEN
-                ret = o_fields(i)
-            END IF
-        END DO
-
-    END FUNCTION get_field_id
-
-
-    SUBROUTINE get_output_fields(dest)
-
-        IMPLICIT NONE
-
-        CHARACTER(LEN=*), INTENT(OUT) :: dest(:)
-
-        dest(1) = "discharge"
-        dest(2) = "air_temperature"
-        dest(3) = "snow_amount"
-        dest(4) = "snow_density"
-        dest(5) = "snow_cover"
-        dest(6) = "snow_depth"
-        dest(7) = "snow_fall"
-        dest(8) = "soil_moisture"
-
-    END SUBROUTINE get_output_fields
-
-
-    SUBROUTINE get_output_field(dest, stride) bind(c, name="get_ovar")
-
-        USE, INTRINSIC :: ISO_C_BINDING
-
-        IMPLICIT NONE
-
-        INTEGER(KIND=C_INT), INTENT(IN)                   :: stride
-        CHARACTER(KIND=C_CHAR), DIMENSION(*), INTENT(OUT) :: dest
-        CHARACTER(maxcharpath), ALLOCATABLE               :: fldids(:)
-        INTEGER :: i, j, k, nflds
-
-        nflds = get_num_output_fields()
-        ALLOCATE(fldids(nflds))
-        CALL get_output_fields(fldids)
-        DO i=1,nflds
-            k = len(TRIM(fldids(i)))
-            DO j=1,k
-                dest((i - 1)*stride + j) = fldids(i)(j:j)
-            END DO
-            dest((i - 1)*stride + k + 1) = C_NULL_CHAR
-        END DO
-        DEALLOCATE(fldids)
-
-    END SUBROUTINE get_output_field
-
-
-    SUBROUTINE get_latlons(targetlatarr, targetlonarr)
-
         USE MODVAR, ONLY : nsub, basin
 
         IMPLICIT NONE
 
-        REAL, INTENT(OUT) :: targetlatarr(nsub)
-        REAL, INTENT(OUT) :: targetlonarr(nsub)
+        REAL(KIND=C_FLOAT), INTENT(OUT) :: targetlatarr(nsub)
+        REAL(KIND=C_FLOAT), INTENT(OUT) :: targetlonarr(nsub)
         INTEGER           :: i
 
         DO i = 1, nsub
@@ -189,19 +225,18 @@ CONTAINS
     END SUBROUTINE get_latlons
 
 
-    SUBROUTINE get_basin_field(targetarr, var)
+    SUBROUTINE get_basin_field(index, targetarr) bind(c, name="get_ovar_values")
 
         USE MODVAR, ONLY : nsub, outvar, outvarindex
 
         IMPLICIT NONE
 
+        INTEGER, INTENT(IN) :: index
         REAL, INTENT(OUT)   :: targetarr(nsub)
-        CHARACTER(LEN=*), INTENT(IN) :: var
-        INTEGER             :: i, varid
+        INTEGER             :: i
 
-        varid = get_field_id(var)
         DO i  = 1, nsub
-            targetarr(i) = outvar(i,outvarindex(varid))
+            targetarr(i) = outvar(i,outvarindex(o_fields(index)))
         END DO
 
     END SUBROUTINE get_basin_field

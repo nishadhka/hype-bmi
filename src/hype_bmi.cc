@@ -6,9 +6,14 @@ extern "C" int init_hype(char*, int*);
 extern "C" int update_hype();
 extern "C" int finalize_hype();
 extern "C" int get_num_basins();
-//extern "C" int get_hype_time(double*);
+extern "C" int get_latlons(float*, float*);
+extern "C" float get_hype_time();
+extern "C" float get_hype_end_time();
+extern "C" float get_hype_time_step();
 extern "C" int get_num_ovars();
-extern "C" void get_ovar(char*, int*);
+extern "C" void get_ovar_name(int*, char*);
+extern "C" void get_ovar_units(int*, char*);
+extern "C" void get_ovar_values(int*, float*);
 
 HypeBmi::HypeBmi(){}
 
@@ -84,199 +89,299 @@ int HypeBmi::get_input_var_names(char **names) const
 
 int HypeBmi::get_output_var_names(char **names) const
 {
-   int m = get_num_ovars();
-   int k = BMI_MAX_VAR_NAME;
-   char* store = (char*)malloc(m * k * sizeof(char));
-   char** x = (char**)malloc(m * sizeof(char*));
-   for(int i = 0; i < m; ++i)
-   {
-        x[i] = &(store[i * k]);
-   }
-   get_ovar(store, &k);
-   for(int i = 0; i < m; ++i)
-   {
-        strcpy(names[i], x[i]);
-   }
-   free(x);
-   free(store);
-   return BMI_SUCCESS;
+    int m = get_num_ovars();
+    int k = 0;
+    for(int i = 0; i < m; ++i)
+    {
+        k = i + 1;
+        get_ovar_name(&k, names[i]);
+    }
+    return BMI_SUCCESS;
+}
+
+int get_ivar_index(const char* name)
+{
+    return -1;
+}
+
+int get_ovar_index(const char* name)
+{
+    int m = get_num_ovars();
+    int k = 0;
+    char buf[BMI_MAX_VAR_NAME];
+    for(int i = 0; i < m; ++i)
+    {
+        k = i + 1;
+        get_ovar_name(&k, buf);
+        if(strcmp(name, buf) == 0)
+        {
+            return k;
+        }
+    }
+    return -1;
 }
 
 int HypeBmi::get_var_type(const char* name, char* otype) const
 {
-   int m = get_num_ovars();
-   int k = BMI_MAX_VAR_NAME;
-   char* store = (char*)malloc(m * k * sizeof(char));
-   // TODO: Add input variables whenever they are available
-   get_ovar(store, &k);
-   for(int i = 0; i < m; ++i)
-   {
-        if(strcmp(name, &(store[i * k])) == 0)
-        {
-            strcpy(otype, "double\n");
-            return BMI_SUCCESS;
-        }
-   }
-   free(store);
-   return BMI_FAILURE;
+    if(get_ivar_index(name) != -1 or get_ovar_index(name) != -1)
+    {
+        strcpy(otype, "double\n");
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_var_grid(const char* name, int* gtype) const
 {
-   int m = get_num_ovars();
-   int k = BMI_MAX_VAR_NAME;
-   char* store = (char*)malloc(m * k * sizeof(char));
-   // TODO: Add input variables whenever they are available
-   get_ovar(store, &k);
-   for(int i = 0; i < m; ++i)
-   {
-        if(strcmp(name, &(store[i * k])) == 0)
-        {
-            *gtype = 1;
-            return BMI_SUCCESS;
-        }
-   }
-   free(store);
-   return BMI_FAILURE;
+    if(get_ivar_index(name) != -1 or get_ovar_index(name) != -1)
+    {
+        *gtype = 1;
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
-
 
 int HypeBmi::get_var_itemsize(const char* name, int* dest) const
 {
-   return BMI_FAILURE;
+    if(get_ivar_index(name) != -1 or get_ovar_index(name) != -1)
+    {
+        *dest = get_num_basins();
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_var_units(const char* name, char* dest) const
 {
-   return BMI_FAILURE;
+    int k = get_ivar_index(name);
+    if(k > 0)
+    {
+//        get_ivar_units(&k, dest);
+        return BMI_SUCCESS;
+    }
+    k = get_ovar_index(name);
+    if(k > 0)
+    {
+        get_ovar_units(&k, dest);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_var_nbytes(const char* name, int* dest) const
 {
-   return BMI_FAILURE;
+    *dest = 0;
+    int size = 0;
+    if(this->get_var_itemsize(name, &size) == BMI_SUCCESS)
+    {
+        *dest = size * sizeof(double);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_current_time(double* dest) const
 {
-   return BMI_FAILURE;
+    *dest = (double)get_hype_time();
+    return BMI_SUCCESS;
 }
 
 int HypeBmi::get_start_time(double* dest) const
 {
-   return BMI_FAILURE;
+    *dest = 0.;
+    return BMI_SUCCESS;
 }
 
 int HypeBmi::get_end_time(double* dest) const
 {
-   return BMI_FAILURE;
+    *dest = (double)get_hype_end_time();
+    return BMI_SUCCESS;
 }
 
 int HypeBmi::get_time_units(char* dest) const
 {
-   return BMI_FAILURE;
+    strcpy(dest, "hours since blabla\n");
+    return BMI_SUCCESS;
 }
 
 int HypeBmi::get_time_step(double* dest) const
 {
-   return BMI_FAILURE;
+    *dest = (double)get_hype_time_step();
+    return BMI_SUCCESS;
 }
 
 int HypeBmi::get_value(const char* name, void* dest) const
 {
-   return BMI_FAILURE;
+    int k = get_ovar_index(name);
+    if(k > 0)
+    {
+        get_ovar_values(&k, (float*)dest);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_value_ptr(const char* name, void** dest)
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_value_at_indices(const char* name, void* dest, const int* pts, int numpts) const
 {
-   return BMI_FAILURE;
+    int k = get_ovar_index(name);
+    if(k > 0)
+    {
+        float* buf = (float*)malloc(get_num_basins()*sizeof(float));
+        get_ovar_values(&k, buf);
+        for(int i=0; i < numpts; ++i)
+        {
+            ((float*)dest)[i] = buf[pts[i]];
+        }
+        free(buf);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::set_value(const char* name, const void* src)
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::set_value_ptr(const char* name, void** src)
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::set_value_at_indices(const char* name, const int* pts, int numpts, const void* src)
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_size(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        *dest = get_num_basins();
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_rank(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        *dest = 1;
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_type(int id, char* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        strcpy(dest, "unstructured\n");
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_shape(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        *dest = get_num_basins();
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_spacing(int id, double* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_origin(int id, double* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_x(int id, double* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        int n = get_num_basins();
+        float* lats = (float*)malloc(sizeof(float)*n);
+        float* lons = (float*)malloc(sizeof(float)*n);
+        get_latlons(lats, lons);
+        for(int i=0; i<n ; ++i)
+        {
+            dest[i] = (double)lons[i];
+        }
+        free(lats);
+        free(lons);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_y(int id, double* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        int n = get_num_basins();
+        float* lats = (float*)malloc(sizeof(float)*n);
+        float* lons = (float*)malloc(sizeof(float)*n);
+        get_latlons(lats, lons);
+        for(int i=0; i<n ; ++i)
+        {
+            dest[i] = (double)lats[i];
+        }
+        free(lats);
+        free(lons);
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_z(int id, double* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        *dest = 0.;
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_cell_count(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    if(id == 1)
+    {
+        *dest = get_num_basins();
+        return BMI_SUCCESS;
+    }
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_point_count(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_vertex_count(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_connectivity(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
 
 int HypeBmi::get_grid_offset(int id, int* dest) const
 {
-   return BMI_FAILURE;
+    return BMI_FAILURE;
 }
