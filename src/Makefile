@@ -47,16 +47,16 @@ hypecode:
 endif
 
 hypebmi:		hypelib.o mainbmi.o hype_bmi.o
-	g++ -g -o hypec hypelib.o mainbmi.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran
+	$(CXX) $(LDFLAGS) -o hypec hypelib.o mainbmi.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran
 
 hypelib.o:		hypecode hypelib.f90
 	$(f90comp) -I hypecode -c $(switch) hypelib.f90
 
 mainbmi.o:		mainbmi.c
-	g++ -g -c mainbmi.c
+	$(CXX) $(CPPFLAGS) -c mainbmi.c
 
 hype_bmi.o:		hype_bmi.cc hype_bmi.h
-	g++ -g -c hype_bmi.cc
+	$(CXX) $(CPPFLAGS) -c hype_bmi.cc
 
 %.mod: 			%.f90
 	$(f90comp) -c $(switch) $<
