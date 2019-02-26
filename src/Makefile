@@ -26,10 +26,10 @@ endif
 BUILD_HYPE ?= 0
 
 # Makefile
-all:        hype hypec
+all:        	hype hypebmi
 
 ifndef SKIP_HYPE_BUILD
-hype:	    hypecode
+hype:	    	hypecode
 	cd hypecode && make comp=$(comp) config=$(config)
 
 hypecode:
@@ -39,28 +39,30 @@ hypecode:
 	rm -f hypecode/*.mod && rm -f hypecode/*.obj && chmod u-x hypecode/*
 	rm hype_5_6_2_src.tgz
 else
-hype:	    hypecode
+hype:	    	hypecode
 	@echo "Skipping hype source build"
 
 hypecode:
 	@echo "Skipping hype source download"
 endif
-hypec:      hypelib.o hypebmi.o hype_bmi.o
-	g++ -g -o hypec $(libcobjects) -lgfortran
 
-hypelib.o:    hypecode hypelib.f90
-	$(f90comp) -I hypecode -o hypelib $(switch) hypecode/*.o
+hypebmi:		hypelib.o mainbmi.o hype_bmi.o
+	g++ -g -o hypec hypelib.o mainbmi.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran
 
-hypebmi.o:  hypebmi.c
-	g++ -g -c hypebmi.c
+hypelib.o:		hypecode hypelib.f90
+	$(f90comp) -I hypecode -c $(switch) hypelib.f90
 
-hype_bmi.o:  bmi hype_bmi.cc hype_bmi.h
+mainbmi.o:		mainbmi.c
+	g++ -g -c mainbmi.c
+
+hype_bmi.o:		hype_bmi.cc hype_bmi.h
 	g++ -g -c hype_bmi.cc
 
-%.mod: %.f90
+%.mod: 			%.f90
 	$(f90comp) -c $(switch) $<
 
 .PHONY : clean
 clean:
 	rm -f *.o *.mod
 	rm -rf hypecode
+	rm hypec
