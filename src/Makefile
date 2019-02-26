@@ -23,71 +23,44 @@ ifeq ($(f90comp),$(comp_ifort))
 	endif
 endif
 
-objects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o main.o
-libobjects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o hypelib.o mainlib.o
-libcobjects = libdate.o hypevar.o modvar.o worvar.o general_wc.o general_func.o convert.o time.o compout.o hypetypes.o t_proc.o readwrite.o hype_indata.o hype_tests.o atm_proc.o hype_wbout.o npc_soil_proc.o soil_proc.o irrigation.o regional_groundwater.o sw_proc.o npc_sw_proc.o soilmodel0.o glacier_soilmodel.o soilmodel4.o model_hype.o data.o statedata.o optim.o hypelib.o hypebmi.o hype_bmi.o
-modfiles = libdate.mod hypevariables.mod modvar.mod worldvar.mod general_water_concentration.mod general_functions.mod convert.mod timeroutines.mod compout.mod statetype_module.mod tracer_processes.mod readwrite_routines.mod hype_indata.mod model_test_routines.mod atmospheric_processes.mod hype_waterbalance.mod npc_soil_processes.mod soil_processes.mod irrigation_module.mod regional_groundwater_module.mod surfacewater_processes.mod npc_surfacewater_processes.mod soilmodel_default.mod glacier_soilmodel.mod floodplain_soilmodel.mod modelmodule.mod datamodule.mod state_datamodule.mod optimization.mod hypelib.mod
+BUILD_HYPE ?= 0
 
 # Makefile
 all:        hype hypec
 
-hype:	    $(objects)
-	$(f90comp) -o hype $(switch) $(objects)
+ifndef SKIP_HYPE_BUILD
+hype:	    hypecode
+	cd hypecode && make comp=$(comp) config=$(config)
 
-#hypelib:    $(libobjects)
-#	$(f90comp) -o hypelib $(switch) $(libobjects)
+hypecode:
+	wget https://sourceforge.net/projects/hype/files/release_hype_5_6_2/hype_5_6_2_src.tgz
+	tar -xvzf hype_5_6_2_src.tgz
+	mv src hypecode
+	rm -f hypecode/*.mod && rm -f hypecode/*.obj && chmod u-x hypecode/*
+	rm hype_5_6_2_src.tgz
+else
+hype:	    hypecode
+	@echo "Skipping hype source build"
 
-hypec:      $(libobjects) hypebmi.o hype_bmi.o
+hypecode:
+	@echo "Skipping hype source download"
+endif
+hypec:      hypelib.o hypebmi.o hype_bmi.o
 	g++ -g -o hypec $(libcobjects) -lgfortran
+
+hypelib.o:    hypecode hypelib.f90
+	$(f90comp) -I hypecode -o hypelib $(switch) hypecode/*.o
 
 hypebmi.o:  hypebmi.c
 	g++ -g -c hypebmi.c
 
-hype_bmi.o:  hype_bmi.cc hype_bmi.h
+hype_bmi.o:  bmi hype_bmi.cc hype_bmi.h
 	g++ -g -c hype_bmi.cc
 
-# All .o files are made from corresponding .f90 files
-%.o:	%.f90
+%.mod: %.f90
 	$(f90comp) -c $(switch) $<
-%.o:	%.F90
-	$(f90comp) -c $(switch) $<
-%.mod:	%.f90
-	$(f90comp) -c $(switch) $<
-%.mod:	%.F90
-	$(f90comp) -c $(switch) $<
-
-# Dependencies
-modvar.o       : libdate.mod convert.mod
-convert.o      : libdate.mod
-atm_proc.o     : hypevariables.mod modvar.mod hype_indata.mod
-irrigation.o   : hypevariables.mod modvar.mod statetype_module.mod soil_processes.mod
-t_proc.o       : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod
-npc_soil_proc.o: hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod
-soil_proc.o    : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod npc_soil_processes.mod atmospheric_processes.mod hype_indata.mod
-npc_sw_proc.o  : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod
-sw_proc.o      : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod soil_processes.mod
-soilmodel0.o   : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod npc_soil_processes.mod soil_processes.mod atmospheric_processes.mod regional_groundwater_module.mod irrigation_module.mod tracer_processes.mod
-glacier_soilmodel.o : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod npc_soil_processes.mod soil_processes.mod atmospheric_processes.mod regional_groundwater_module.mod tracer_processes.mod
-soilmodel4.o   : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod general_functions.mod npc_soil_processes.mod soil_processes.mod atmospheric_processes.mod regional_groundwater_module.mod irrigation_module.mod tracer_processes.mod
-regional_groundwater.o : hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod npc_soil_processes.mod 
-model_hype.o   : libdate.mod hypevariables.mod modvar.mod statetype_module.mod general_water_concentration.mod glacier_soilmodel.mod soilmodel_default.mod soil_processes.mod npc_soil_processes.mod surfacewater_processes.mod npc_surfacewater_processes.mod irrigation_module.mod regional_groundwater_module.mod hype_waterbalance.mod hype_indata.mod atmospheric_processes.mod tracer_processes.mod
-compout.o      : libdate.mod modvar.mod worldvar.mod timeroutines.mod convert.mod
-worldvar.o     : libdate.mod modvar.mod
-readwrite.o    : libdate.mod worldvar.mod convert.mod compout.mod
-hype_wbout.o   : libdate.mod modvar.mod worldvar.mod readwrite_routines.mod
-hype_indata.o  : libdate.mod modvar.mod worldvar.mod readwrite_routines.mod
-hype_tests.o   : libdate.mod hypevariables.mod modvar.mod worldvar.mod readwrite_routines.mod
-timeroutines.o : libdate.mod worldvar.mod modvar.mod
-data.o         : libdate.mod modvar.mod worldvar.mod convert.mod timeroutines.mod readwrite_routines.mod compout.mod modelmodule.mod 
-optim.o        : libdate.mod modvar.mod worldvar.mod statetype_module.mod timeroutines.mod modelmodule.mod compout.mod datamodule.mod state_datamodule.mod
-statedata.o    : libdate.mod modvar.mod worldvar.mod statetype_module.mod modelmodule.mod readwrite_routines.mod
-hypelib.o      : libdate.mod modvar.mod worldvar.mod statetype_module.mod timeroutines.mod readwrite_routines.mod model_test_routines.mod modelmodule.mod compout.mod datamodule.mod optimization.mod state_datamodule.mod
-main.o         : libdate.mod modvar.mod worldvar.mod statetype_module.mod timeroutines.mod readwrite_routines.mod model_test_routines.mod modelmodule.mod compout.mod datamodule.mod optimization.mod state_datamodule.mod
-mainlib.o      : libdate.mod modvar.mod worldvar.mod statetype_module.mod timeroutines.mod readwrite_routines.mod model_test_routines.mod modelmodule.mod compout.mod datamodule.mod optimization.mod state_datamodule.mod
-
 
 .PHONY : clean
-clean:	
-	rm -f $(objects)
-	rm -f $(libobjects)
-	rm -f $(modfiles)
+clean:
+	rm -f *.o *.mod
+	rm -rf hypecode

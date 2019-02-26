@@ -371,12 +371,12 @@ CONTAINS
         CALL define_output_variables()
         
         CALL define_model_parameters()
-        
+
         CALL load_coded_info(infodir, istat, bdate, sdate, outstartdate, dtskip, ndt, numsubstances,    &
                              stateinput, maxoutstates, numoutstates, stateoutadate, prestateoutdate,    &
                              modeldir, resdir, forcingdir, logdir,                                      &
                              quseobsallstations, quseobsnostations, qarnostations, warnostations,       &
-                             wendupdallstations, wendupdnostations, wobsvarname, subincrit)
+                             wendupdallstations, wendupdnostations, subincrit)
       IF(istat/=0) RETURN
       nmapperiod = 0 !initialization needed if no mapoutput
 
@@ -447,7 +447,7 @@ CONTAINS
       
       IF(istat.NE.0) RETURN
 
-      CALL prepare_for_update(modeldir, wobsvarname, quseobsallstations, quseobsnostations,             &
+      CALL prepare_for_update(modeldir, quseobsallstations, quseobsnostations,                          &
                               qarnostations, warnostations, wendupdallstations, wendupdnostations,      & 
                               nsub)
 
