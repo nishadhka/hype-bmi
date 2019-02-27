@@ -26,7 +26,7 @@ endif
 BUILD_HYPE ?= 0
 
 # Makefile
-all:        	hype hypebmi
+all:        	hype hype_bmi_server hype_bmi_test
 
 ifndef SKIP_HYPE_BUILD
 hype:	    	hypecode
@@ -46,23 +46,29 @@ hypecode:
 	@echo "Skipping hype source download"
 endif
 
-hypebmi:		hypelib.o mainbmi.o hype_bmi.o
-	$(CXX) $(LDFLAGS) -o hypec hypelib.o mainbmi.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran
+hype_bmi_server:	hypelib.o hype_bmi.o run-bmi-server.o
+	$(CXX) $(LDFLAGS) -o hype_bmi_server hypelib.o run-bmi-server.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran -lgrpc4bmi
 
-hypelib.o:		hypecode hypelib.f90
+hype_bmi_test:		hypelib.o mainbmi.o hype_bmi.o
+	$(CXX) $(LDFLAGS) -o hype_bmi_test hypelib.o mainbmi.o hype_bmi.o $(shell find ./hypecode/ -name "*.o" ! -name "main.o") -lgfortran
+
+hypelib.o:			hypecode hypelib.f90
 	$(f90comp) -I hypecode -c $(switch) hypelib.f90
 
-mainbmi.o:		mainbmi.c
+run-bmi-server.o:	run-bmi-server.cc
+	$(CXX) $(CPPFLAGS) -c run-bmi-server.cc
+
+mainbmi.o:			mainbmi.c
 	$(CXX) $(CPPFLAGS) -c mainbmi.c
 
-hype_bmi.o:		hype_bmi.cc hype_bmi.h
+hype_bmi.o:			hype_bmi.cc hype_bmi.h
 	$(CXX) $(CPPFLAGS) -c hype_bmi.cc
 
-%.mod: 			%.f90
+%.mod: 				%.f90
 	$(f90comp) -c $(switch) $<
 
 .PHONY : clean
 clean:
 	rm -f *.o *.mod
 	rm -rf hypecode
-	rm hypec
+	rm hype_bmi_server hype_bmi_test
