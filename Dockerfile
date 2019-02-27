@@ -18,7 +18,7 @@ WORKDIR third_party/protobuf
 RUN make install
 
 # Build bmi-c from source
-RUN git clone https://github.com/eWaterCycle/grpc4bmi.git /opt/grpc4bmi
+RUN git clone --depth=1 https://github.com/eWaterCycle/grpc4bmi.git /opt/grpc4bmi
 WORKDIR /opt/grpc4bmi
 RUN git submodule update --init --recursive
 RUN mkdir -p /opt/grpc4bmi/cpp/bmi-c/build
@@ -30,13 +30,13 @@ RUN make install
 RUN mkdir -p /opt/grpc4bmi/cpp/build
 WORKDIR /opt/grpc4bmi/cpp/build
 RUN cmake ..
-RUN make
+RUN make install
 
 # Build hype-bmi
 COPY . /opt/hype-bmi
 WORKDIR /opt/hype-bmi/src
-RUN make CPPFLAGS="-I/opt/grpc4bmi/cpp"
+RUN make
 
-#VOLUME /data
-#WORKDIR /data
-CMD ["/opt/hype-bmi/src/hypec","/data/"]
+VOLUME /data
+WORKDIR /data
+CMD ["/opt/hype-bmi/src/hype_bmi_server","/data/"]
