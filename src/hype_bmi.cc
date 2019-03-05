@@ -127,7 +127,7 @@ int HypeBmi::get_var_type(const char* name, char* otype) const
 {
     if(get_ivar_index(name) != -1 or get_ovar_index(name) != -1)
     {
-        strcpy(otype, "double\n");
+        strcpy(otype, "float\n");
         return BMI_SUCCESS;
     }
     return BMI_FAILURE;
@@ -202,7 +202,7 @@ int HypeBmi::get_end_time(double* dest) const
 
 int HypeBmi::get_time_units(char* dest) const
 {
-    strcpy(dest, "hours since blabla\n");
+    strcpy(dest, "hours since blabla\0");
     return BMI_SUCCESS;
 }
 
