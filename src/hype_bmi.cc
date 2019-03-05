@@ -1,4 +1,5 @@
 #include <cstring>
+#include <libgen.h>
 #include "hype_bmi.h"
 
 
@@ -22,7 +23,8 @@ HypeBmi::~HypeBmi(){}
 int HypeBmi::initialize(const char *config_file)
 {
     int mem = 0;
-    init_hype(const_cast<char*>(config_file), &mem);
+    const char* dir = dirname(const_cast<char*>(config_file));
+    init_hype(const_cast<char*>(dir), &mem);
     return BMI_SUCCESS;
 }
 

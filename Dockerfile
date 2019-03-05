@@ -38,5 +38,7 @@ WORKDIR /opt/hype-bmi/src
 RUN make
 
 VOLUME /data
-WORKDIR /data
-CMD ["/opt/hype-bmi/src/hype_bmi_server","/data/"]
+# WORKDIR /data
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/lib"
+ENV PATH="${PATH}:/usr/local/bin"
+ENTRYPOINT ["/opt/hype-bmi/src/hype_bmi_server"]

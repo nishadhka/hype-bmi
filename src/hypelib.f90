@@ -329,7 +329,7 @@ CONTAINS
         INTEGER(KIND=C_INT), INTENT(IN), OPTIONAL           :: iseq
         INTEGER(KIND=C_INT)                                 :: istat
         INTEGER                                             :: ii
-        LOGICAL                                             :: LENDL
+        LOGICAL                                             :: LENDL, LENDS
 
         istat = 0
         iens = 1
@@ -340,12 +340,19 @@ CONTAINS
 
         IF(PRESENT(dir)) THEN
             LENDL = .FALSE.
+            LENDS = .FALSE.
             DO ii=1,maxcharpath
-                IF(dir(ii) == C_NULL_CHAR) THEN
+                IF(dir(ii) == C_NULL_CHAR .AND. .NOT. LENDL) THEN
                     LENDL=.TRUE.
+                    LENDS=(dir(ii-1) == '/')
                 END IF
                 IF(LENDL) THEN
-                    infodir(ii:ii) = ' '
+                    IF(.NOT. LENDS) THEN
+                        infodir(ii:ii) = '/'
+                        LENDS=.TRUE.
+                    ELSE
+                        infodir(ii:ii) = ' '
+                    END IF
                 ELSE
                     infodir(ii:ii) = dir(ii)
                 END IF
