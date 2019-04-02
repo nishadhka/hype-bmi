@@ -228,11 +228,12 @@ CONTAINS
     SUBROUTINE get_basin_field(index, targetarr) bind(c, name="get_ovar_values")
 
         USE MODVAR, ONLY : nsub, outvar, outvarindex
+        USE, INTRINSIC :: ISO_C_BINDING
 
         IMPLICIT NONE
 
-        INTEGER, INTENT(IN) :: index
-        REAL, INTENT(OUT)   :: targetarr(nsub)
+        INTEGER(KIND=C_INT), INTENT(IN) :: index
+        REAL(KIND=C_DOUBLE), INTENT(OUT)   :: targetarr(nsub)
         INTEGER             :: i
 
         DO i  = 1, nsub
