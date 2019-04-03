@@ -127,7 +127,7 @@ int HypeBmi::get_var_type(const char* name, char* otype) const
 {
     if(get_ivar_index(name) != -1 or get_ovar_index(name) != -1)
     {
-        strcpy(otype, "float");
+        strcpy(otype, "double");
         return BMI_SUCCESS;
     }
     return BMI_FAILURE;

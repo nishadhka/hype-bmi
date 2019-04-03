@@ -71,13 +71,13 @@ CONTAINS
     FUNCTION get_hype_time() RESULT(ret) bind(c, name="get_hype_time")
 
         USE, INTRINSIC :: ISO_C_BINDING
-        USE WORLDVAR,       ONLY : sdate
+        USE MODVAR,       ONLY : currentdate
 
         IMPLICIT NONE
 
         REAL(KIND=C_FLOAT)      :: ret
 
-        ret = convert_hype_time(sdate)
+        ret = convert_hype_time(currentdate)
 
     END FUNCTION get_hype_time
 
@@ -228,11 +228,12 @@ CONTAINS
     SUBROUTINE get_basin_field(index, targetarr) bind(c, name="get_ovar_values")
 
         USE MODVAR, ONLY : nsub, outvar, outvarindex
+        USE, INTRINSIC :: ISO_C_BINDING
 
         IMPLICIT NONE
 
-        INTEGER, INTENT(IN) :: index
-        REAL, INTENT(OUT)   :: targetarr(nsub)
+        INTEGER(KIND=C_INT), INTENT(IN) :: index
+        REAL(KIND=C_DOUBLE), INTENT(OUT)   :: targetarr(nsub)
         INTEGER             :: i
 
         DO i  = 1, nsub
@@ -333,6 +334,7 @@ CONTAINS
 
         istat = 0
         iens = 1
+        idt=1
         
         CALL DATE_AND_TIME(logdate, logtime, values=datim)
 
@@ -512,6 +514,8 @@ CONTAINS
           CALL initiate_model(frozenstate, soilstate, aquiferstate, riverstate, lakestate, miscstate) 
       ENDIF
       oldyear = 0
+
+      istat=update()
 
     END FUNCTION initialize
 
