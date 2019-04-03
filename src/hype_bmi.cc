@@ -14,7 +14,7 @@ extern "C" float get_hype_time_step();
 extern "C" int get_num_ovars();
 extern "C" void get_ovar_name(int*, char*);
 extern "C" void get_ovar_units(int*, char*);
-extern "C" void get_ovar_values(int*, float*);
+extern "C" void get_ovar_values(int*, double*);
 
 HypeBmi::HypeBmi(){}
 
@@ -217,7 +217,7 @@ int HypeBmi::get_value(const char* name, void* dest) const
     int k = get_ovar_index(name);
     if(k > 0)
     {
-        get_ovar_values(&k, (float*)dest);
+        get_ovar_values(&k, (double*)dest);
         return BMI_SUCCESS;
     }
     return BMI_FAILURE;
@@ -233,11 +233,11 @@ int HypeBmi::get_value_at_indices(const char* name, void* dest, const int* pts, 
     int k = get_ovar_index(name);
     if(k > 0)
     {
-        float* buf = (float*)malloc(get_num_basins()*sizeof(float));
+        double* buf = (double*)malloc(get_num_basins()*sizeof(double));
         get_ovar_values(&k, buf);
         for(int i=0; i < numpts; ++i)
         {
-            ((float*)dest)[i] = buf[pts[i]];
+            ((double*)dest)[i] = buf[pts[i]];
         }
         free(buf);
         return BMI_SUCCESS;
