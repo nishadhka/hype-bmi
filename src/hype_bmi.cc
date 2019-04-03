@@ -284,7 +284,7 @@ int HypeBmi::get_grid_type(int id, char* dest) const
 {
     if(id == 1)
     {
-        strcpy(dest, "unstructured\n");
+        strcpy(dest, "unstructured");
         return BMI_SUCCESS;
     }
     return BMI_FAILURE;
