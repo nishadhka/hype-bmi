@@ -8,8 +8,8 @@ MODULE HYPELIB
                                     miscstatetype
     USE WORLDVAR, ONLY :            maxcharpath
     USE LIBDATE, ONLY :             DateType, OPERATOR(.EQ.)
-    USE HYPEVARIABLES, ONLY :       o_cout, o_ctmp, o_snow, o_snowcover, o_snowdens, o_snowdepth, o_snowfall,           &
-                                    o_snowmelt, o_soim, o_soiltmp
+    USE HYPEVARIABLES, ONLY :       o_cout, o_rout, o_tobs, o_ctmp, o_prec, &
+                                           o_cprc, o_evap, o_crun, o_soim
 
     IMPLICIT NONE
     
@@ -63,8 +63,8 @@ MODULE HYPELIB
     TYPE(LAKESTATETYPE)    ::       lakestate
     TYPE(MISCSTATETYPE)    ::       miscstate
 
-    INTEGER, PARAMETER :: o_fields(9) = (/ o_cout, o_ctmp, o_snow, o_snowdens, o_snowcover, o_snowdepth, o_snowfall,&
-                                        o_soim, o_soiltmp /)
+    INTEGER, PARAMETER :: o_fields(9) = (/ o_cout, o_rout, o_tobs, o_ctmp, o_prec, &
+                                           o_cprc, o_evap, o_crun, o_soim /)
 
 CONTAINS
 
