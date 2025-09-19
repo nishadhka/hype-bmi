@@ -25,6 +25,9 @@ endif
 
 BUILD_HYPE ?= 0
 
+# Add include path for BMI headers and grpc4bmi
+CPPFLAGS = -I/usr/local/include -I/usr/local/include/grpc4bmi $(shell pkg-config --cflags grpc4bmi 2>/dev/null || echo "")
+
 # Makefile
 all:        	hype hype_bmi_server hype_bmi_test
 

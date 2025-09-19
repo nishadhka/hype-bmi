@@ -25,6 +25,7 @@ RUN apt-get update && apt-get install -y \
     pkg-config \
     vim-tiny \
     wget \
+    libabsl-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Build grpc from source (removing git history saves 1.7 GB)
