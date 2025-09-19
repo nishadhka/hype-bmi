@@ -36,11 +36,11 @@ hype:	    	hypecode
 	cd hypecode && make comp=$(comp) config=$(config)
 
 hypecode:
-	wget https://sourceforge.net/projects/hype/files/release_hype_5_6_2/hype_5_6_2_src.tgz
-	tar -xvzf hype_5_6_2_src.tgz
-	mv src hypecode
+	wget https://sourceforge.net/projects/hype/files/release_hype_5_32_0/hype_5_32_0_src.tgz
+	tar -xvzf hype_5_32_0_src.tgz
+	mv hype_5_32_0_src hypecode
 	rm -f hypecode/*.mod && rm -f hypecode/*.obj && chmod u-x hypecode/*
-	rm hype_5_6_2_src.tgz
+	rm hype_5_32_0_src.tgz
 else
 hype:	    	hypecode
 	@echo "Skipping hype source build"
